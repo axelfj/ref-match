@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ref-match"
+dynamic = ["version"]
+description = "Ref Match: loudness-matched comparison against reference tracks"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Axel (ROMMUSER)"}]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "soundfile>=0.12"]
+
+[project.scripts]
+ref-match = "ref_match.cli:main"
+ref-match-gui = "ref_match.gui:main"
+
+[project.urls]
+Homepage = "https://github.com/axelfj/ref-match"
+Issues = "https://github.com/axelfj/ref-match/issues"
+
+[tool.setuptools]
+packages = ["ref_match"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ref_match.__version__"}
