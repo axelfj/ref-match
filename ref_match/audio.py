@@ -29,6 +29,12 @@ class Audio:
 
     def __init__(self, path, samples, rate, bits, is_float, container, format_tag=None,
                  encoding=None):
+        if samples.size == 0:
+            raise AudioError("the audio file contains no samples")
+        if rate <= 0:
+            raise AudioError("invalid sample rate")
+        if not np.isfinite(samples).all():
+            raise AudioError("audio contains non-finite samples (NaN or infinity)")
         self.path = path
         self.samples = samples
         self.rate = rate
@@ -205,3 +211,4 @@ def write_wav_pcm(path, samples, rate, bits=24, extensible=False):
         f.write(struct.pack("<4sI", b"fmt ", len(fmt)) + fmt)
         f.write(struct.pack("<4sI", b"data", len(data)))
         f.write(data)
+

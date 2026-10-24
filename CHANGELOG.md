@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased: V2 preparation
+
+- Distinguir bandas sin energía, mono y contrafase; advertir cancelación mono; rechazar audio vacío/no finito y emitir JSON estricto.
+- Todavía no constituye una versión V2 publicada ni valida binarios nativos.
+
 All notable changes to Ref Match are listed here. Versions follow
 [Semantic Versioning](https://semver.org).
 
@@ -19,3 +24,4 @@ First release.
 - Reads WAV (including RF64 and 32-bit float), AIFF, FLAC, MP3 and OGG.
 - Window app plus command line, with HTML (chart included) and JSON reports.
 - Windows installer and macOS (Apple silicon) disk image.
+

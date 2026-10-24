@@ -1,6 +1,7 @@
 """Text, JSON and HTML reports."""
 import html
 import json
+import math
 import time
 
 from . import APP_NAME, __version__, chart
@@ -25,7 +26,7 @@ def region_rows(result):
     for name, lo, hi in REGIONS:
         if name in result["regions"]:
             rows.append(("%s (%g-%g Hz)" % (name, lo, hi), "%+.1f dB" % result["regions"][name],
-                         "%+.1f dB" % result["width_diff"][name]))
+                         ("n/a" if result["width_diff"][name] is None else "%+.1f dB" % result["width_diff"][name])))
     return rows
 
 
@@ -54,8 +55,14 @@ def to_json(result):
     clean["refs"] = [dict(r, bands=keyed(r["bands"])) for r in result["refs"]]
     clean["reference_curve"] = keyed(result["reference_curve"])
     clean["diff"] = keyed(result["diff"])
-    return json.dumps({"app": APP_NAME, "version": __version__, "result": clean}, indent=2,
-                      default=lambda v: None)
+    def finite(value):
+        if isinstance(value, dict):
+            return {k: finite(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [finite(v) for v in value]
+        return None if isinstance(value, float) and not math.isfinite(value) else value
+    return json.dumps(finite({"app": APP_NAME, "version": __version__, "result": clean}),
+                      indent=2, allow_nan=False, default=lambda v: None)
 
 
 CSS = """
@@ -92,3 +99,4 @@ def to_html(result):
                "loudness (ITU-R BS.1770-5). Spectrum: third-octave bands of mid plus side. "
                "Width: side energy relative to mid energy.</small></p>")
     return "\n".join(out)
+
