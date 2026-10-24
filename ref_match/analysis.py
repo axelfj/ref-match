@@ -50,6 +50,17 @@ def _region_power(freqs, power, lo, hi):
     return float(power[sel].sum())
 
 
+def width_ratio_db(mid_power, side_power):
+    """Bound the ratio for display; None means no energy to compare."""
+    if mid_power + side_power <= 1e-24:
+        return None
+    if side_power <= 0:
+        return -60.0
+    if mid_power <= 0:
+        return 60.0
+    return max(-60.0, min(60.0, 10 * math.log10(side_power / mid_power)))
+
+
 def profile(path):
     """Loudness, third-octave spectrum and width of one file at ANCHOR_LUFS."""
     a = audio.read(path)
@@ -70,9 +81,12 @@ def profile(path):
     centres = [fc for fc in BAND_CENTRES if band_edges(fc)[1] <= a.rate / 2]
     bands = _bands_db(freqs, p_mid + p_side, centres)
     width = {}
+    mono_cancellation = []
     for name, lo, hi in REGIONS:
         pm, ps = _region_power(freqs, p_mid, lo, hi), _region_power(freqs, p_side, lo, hi)
-        width[name] = 10 * math.log10(ps / pm) if pm > 0 and ps > 0 else -60.0
+        width[name] = width_ratio_db(pm, ps)
+        if ps > 1e-12 and pm < ps * 1e-6:
+            mono_cancellation.append(name)
     return {
         "file": path,
         "name": os.path.basename(path),
@@ -81,6 +95,7 @@ def profile(path):
         "loudness": m,
         "bands": dict(zip(centres, bands)),
         "width_db": width,
+        "mono_cancellation_regions": mono_cancellation,
     }
 
 
@@ -124,6 +139,10 @@ def compare(mix_path, ref_paths):
     diff = {fc: mix["bands"][fc] - curve[fc] for fc in curve if fc in mix["bands"]}
 
     notes = []
+    for p in [mix, *refs]:
+        if p["mono_cancellation_regions"]:
+            notes.append({"level": "warn", "message": "%s: severe mono cancellation in %s."
+                          % (p["name"], ", ".join(p["mono_cancellation_regions"]))})
     regions = {}
     for name, _lo, _hi in REGIONS:
         fcs = [fc for fc in diff if region_of(fc) == name]
@@ -155,7 +174,11 @@ def compare(mix_path, ref_paths):
 
     width = {}
     for name, _lo, _hi in REGIONS:
-        ref_w = _mean_db([r["width_db"][name] for r in refs])
+        ref_values = [r["width_db"][name] for r in refs if r["width_db"][name] is not None]
+        if not ref_values or mix["width_db"][name] is None:
+            width[name] = None
+            continue
+        ref_w = _mean_db(ref_values)
         width[name] = mix["width_db"][name] - ref_w
         if abs(width[name]) >= 3.0 and max(mix["width_db"][name], ref_w) > -30:
             notes.append({"level": "info", "message": "%s are %s than the references "
@@ -179,3 +202,4 @@ def export_matched(result, folder):
         audio.write_wav_float(out, a.samples * np.float32(10 ** (gain_db / 20)), a.rate)
         written.append(out)
     return written
+
