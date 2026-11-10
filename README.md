@@ -91,3 +91,7 @@ Descargá el instalador de Windows o el .dmg de Mac en
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+### Supported channel layouts
+
+Reference comparison supports mono and stereo audio. Multichannel files are rejected rather than silently ignoring center or surround channels. Downmix them explicitly to mono/stereo before comparing.
