@@ -64,6 +64,9 @@ def width_ratio_db(mid_power, side_power):
 def profile(path):
     """Loudness, third-octave spectrum and width of one file at ANCHOR_LUFS."""
     a = audio.read(path)
+    if a.samples.shape[1] not in (1, 2):
+        raise audio.AudioError("reference comparison supports mono or stereo audio only; "
+                               "downmix multichannel audio explicitly before comparing")
     x = a.samples.astype(np.float64)
     m = loudness.measure(a.samples, a.rate)
     i = m["integrated_lufs"]
